@@ -1,4 +1,4 @@
-using Amazon.S3;
+п»їusing Amazon.S3;
 using Amazon.S3.Model;
 using Backup1cToCloud.Settings;
 using Microsoft.Extensions.Options;
@@ -30,7 +30,7 @@ namespace Backup1cToCloud
             }
             catch (Exception ex)
             {
-                SendMail($"Ошибка инициализации в конструкторе: {ex.Message}", config.Value.EmailOptions);
+                SendMail($"РћС€РёР±РєР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё РІ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂРµ: {ex.Message}", config.Value.EmailOptions);
             }
         }
 
@@ -39,7 +39,7 @@ namespace Backup1cToCloud
             //while (!stoppingToken.IsCancellationRequested)
             //{
                 var startDate = DateTime.Now;
-                _logger.LogInformation("Резервное копирование начато {Time}.", startDate);
+                _logger.LogInformation("Р РµР·РµСЂРІРЅРѕРµ РєРѕРїРёСЂРѕРІР°РЅРёРµ РЅР°С‡Р°С‚Рѕ {Time}.", startDate);
                 foreach (DatabaseOption databaseOption in _config.Value.Databases) 
                 {
                     try 
@@ -55,8 +55,8 @@ namespace Backup1cToCloud
                 }
                 var endDate = DateTime.Now;
                 // var delayHours = TimeSpan.FromHours(HoursInADay - (endDate - startDate).TotalHours);
-                _logger.LogInformation("Резервное копирование закончено {Time}.", endDate);
-            //    _logger.LogInformation("Следующий запуск {Time}.", endDate + delayHours);
+                _logger.LogInformation("Р РµР·РµСЂРІРЅРѕРµ РєРѕРїРёСЂРѕРІР°РЅРёРµ Р·Р°РєРѕРЅС‡РµРЅРѕ {Time}.", endDate);
+            //    _logger.LogInformation("РЎР»РµРґСѓСЋС‰РёР№ Р·Р°РїСѓСЃРє {Time}.", endDate + delayHours);
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             //}
         }
@@ -79,7 +79,7 @@ namespace Backup1cToCloud
                 || string.IsNullOrEmpty(options.To)
                 || string.IsNullOrEmpty(options.UserName)
                 || string.IsNullOrEmpty(options.Password)) {
-                    throw new Exception("Неправильные настройки электронной почты!");
+                    throw new Exception("РќРµРїСЂР°РІРёР»СЊРЅС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё СЌР»РµРєС‚СЂРѕРЅРЅРѕР№ РїРѕС‡С‚С‹!");
                 }
         }
 
@@ -98,7 +98,7 @@ namespace Backup1cToCloud
                     targetCheckSum = obj.ETag.ToUpper().Replace("\"", string.Empty);
                     if(sourceCheckSum != targetCheckSum) 
                     {
-                        throw new Exception($"Контрольные суммы файла {archiveName} и файла {obj.Key} в облаке {bucketName} не совпадают!");
+                        throw new Exception($"РљРѕРЅС‚СЂРѕР»СЊРЅС‹Рµ СЃСѓРјРјС‹ С„Р°Р№Р»Р° {archiveName} Рё С„Р°Р№Р»Р° {obj.Key} РІ РѕР±Р»Р°РєРµ {bucketName} РЅРµ СЃРѕРІРїР°РґР°СЋС‚!");
                     }
                 }
             }
@@ -120,12 +120,12 @@ namespace Backup1cToCloud
                     if (File.GetCreationTime(file) < DateTime.Today.AddDays(-1 * _config.Value.ArchiveDepthInDays))
                     {
                         File.Delete(file);
-                        _logger.LogInformation("Файл {File} удалён из папки {BackupPath}.", file, option.BackupPath);
+                        _logger.LogInformation("Р¤Р°Р№Р» {File} СѓРґР°Р»С‘РЅ РёР· РїР°РїРєРё {BackupPath}.", file, option.BackupPath);
                     }
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Ошибка {ex.Message} при удалении файла {file}!");
+                    throw new Exception($"РћС€РёР±РєР° {ex.Message} РїСЂРё СѓРґР°Р»РµРЅРёРё С„Р°Р№Р»Р° {file}!");
                 }
             }
         }
@@ -139,11 +139,11 @@ namespace Backup1cToCloud
                     var response = DeleteObjectAsync(bucketName, obj.Key);
                     if (response.Result.HttpStatusCode == System.Net.HttpStatusCode.NoContent && response.IsCompletedSuccessfully)
                     {
-                        _logger.LogInformation("Файл {Key} удалён из хранилища {Name}", obj.Key, bucketName);
+                        _logger.LogInformation("Р¤Р°Р№Р» {Key} СѓРґР°Р»С‘РЅ РёР· С…СЂР°РЅРёР»РёС‰Р° {Name}", obj.Key, bucketName);
                     }
                     else 
                     {
-                        throw new Exception($"Ошибка при удалении файла {obj.Key} из хранилища {bucketName}");
+                        throw new Exception($"РћС€РёР±РєР° РїСЂРё СѓРґР°Р»РµРЅРёРё С„Р°Р№Р»Р° {obj.Key} РёР· С…СЂР°РЅРёР»РёС‰Р° {bucketName}");
                     }
                 }
             }
@@ -169,7 +169,7 @@ namespace Backup1cToCloud
         {
             Task<ListBucketsResponse> response = ListBucketsAsync();
             if(!response.Result.Buckets.Any(b => b.BucketName == bucketName)) {
-                throw new Exception($"Каталога {bucketName} не существует в облаке!");
+                throw new Exception($"РљР°С‚Р°Р»РѕРіР° {bucketName} РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚ РІ РѕР±Р»Р°РєРµ!");
             }
         }
 
@@ -184,11 +184,11 @@ namespace Backup1cToCloud
             Task<PutObjectResponse> putResponse = PutObjectAsync(bucketName, archiveName);
             if (putResponse.Result.HttpStatusCode == System.Net.HttpStatusCode.OK && putResponse.IsCompletedSuccessfully)
             {
-                _logger.LogInformation("Файл {Archive} скопирован в хранилище {Bucket}", archiveName, bucketName);
+                _logger.LogInformation("Р¤Р°Р№Р» {Archive} СЃРєРѕРїРёСЂРѕРІР°РЅ РІ С…СЂР°РЅРёР»РёС‰Рµ {Bucket}", archiveName, bucketName);
             }
             else
             {
-                throw new Exception($"Ошибка при копировании файла {archiveName} в хранилище {bucketName}");
+                throw new Exception($"РћС€РёР±РєР° РїСЂРё РєРѕРїРёСЂРѕРІР°РЅРёРё С„Р°Р№Р»Р° {archiveName} РІ С…СЂР°РЅРёР»РёС‰Рµ {bucketName}");
             }
         }
 
@@ -216,19 +216,19 @@ namespace Backup1cToCloud
         {
             if (string.IsNullOrEmpty(databaseOption.DatabasePath))
             {
-                throw (new Exception("Путь папки файла базы данных не задан!"));
+                throw (new Exception("РџСѓС‚СЊ РїР°РїРєРё С„Р°Р№Р»Р° Р±Р°Р·С‹ РґР°РЅРЅС‹С… РЅРµ Р·Р°РґР°РЅ!"));
             }
             if (string.IsNullOrEmpty(databaseOption.DatabaseName))
             {
-                throw new Exception("Имя файла базы данных не задано!");
+                throw new Exception("РРјСЏ С„Р°Р№Р»Р° Р±Р°Р·С‹ РґР°РЅРЅС‹С… РЅРµ Р·Р°РґР°РЅРѕ!");
             }
             if (string.IsNullOrEmpty(databaseOption.BackupPath))
             {
-                throw new Exception("Путь папки резервного копирования не задан!");
+                throw new Exception("РџСѓС‚СЊ РїР°РїРєРё СЂРµР·РµСЂРІРЅРѕРіРѕ РєРѕРїРёСЂРѕРІР°РЅРёСЏ РЅРµ Р·Р°РґР°РЅ!");
             }
             if (string.IsNullOrEmpty(databaseOption.BackupName))
             {
-                throw new Exception("Имя файла архива не задано");
+                throw new Exception("РРјСЏ С„Р°Р№Р»Р° Р°СЂС…РёРІР° РЅРµ Р·Р°РґР°РЅРѕ");
             }
             copyFrom = Path.Combine(databaseOption.DatabasePath, databaseOption.DatabaseName);
             copyTo = Path.Combine(databaseOption.BackupPath, databaseOption.DatabaseName);
@@ -238,17 +238,17 @@ namespace Backup1cToCloud
         private void CopyDatabaseToFolder(string copyFrom, string copyTo) 
         {
             if(!File.Exists(copyFrom)) {
-                throw (new Exception($"Файл базы данных {copyFrom} не существует!"));
+                throw (new Exception($"Р¤Р°Р№Р» Р±Р°Р·С‹ РґР°РЅРЅС‹С… {copyFrom} РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚!"));
             }
             DateTime copyToTime = File.GetCreationTime(copyTo);
             DateTime copyFromTime = File.GetCreationTime(copyFrom);
             if (File.Exists(copyTo) && copyToTime != copyFromTime)
             {
                 File.Delete(copyTo);
-                _logger.LogInformation("Файл {CopyTo} с датой создания {CopyToTime} удалён.", copyTo, copyToTime);
+                _logger.LogInformation("Р¤Р°Р№Р» {CopyTo} СЃ РґР°С‚РѕР№ СЃРѕР·РґР°РЅРёСЏ {CopyToTime} СѓРґР°Р»С‘РЅ.", copyTo, copyToTime);
             }
             File.Copy(copyFrom, copyTo);
-            _logger.LogInformation("База данных {CopyFrom} скопирована в {CopyTo}.", copyFrom, copyTo);
+            _logger.LogInformation("Р‘Р°Р·Р° РґР°РЅРЅС‹С… {CopyFrom} СЃРєРѕРїРёСЂРѕРІР°РЅР° РІ {CopyTo}.", copyFrom, copyTo);
         }
 
         private string ArchiveDatabaseToFolder(string sourcePath, string archiveTo, string fileName) 
@@ -263,7 +263,7 @@ namespace Backup1cToCloud
             {
                 archive.CreateEntryFromFile (sourcePath, fileName);
             }
-            _logger.LogInformation("База данных {SourcePath} заархивирована в {ArchivePath}.", sourcePath, archivePath);
+            _logger.LogInformation("Р‘Р°Р·Р° РґР°РЅРЅС‹С… {SourcePath} Р·Р°Р°СЂС…РёРІРёСЂРѕРІР°РЅР° РІ {ArchivePath}.", sourcePath, archivePath);
             return archivePath;
         }
 
@@ -278,7 +278,7 @@ namespace Backup1cToCloud
                 message.BodyEncoding = encoding;
                 message.From = new MailAddress(options.From, options.From, encoding);
                 message.Bcc.Add(new MailAddress(options.To, options.To, encoding));
-                message.Subject = "Отчёт о сохранении баз в облако";
+                message.Subject = "РћС‚С‡С‘С‚ Рѕ СЃРѕС…СЂР°РЅРµРЅРёРё Р±Р°Р· РІ РѕР±Р»Р°РєРѕ";
                 message.Body = body;
                 smtp.EnableSsl = true;
                 smtp.Credentials = new System.Net.NetworkCredential(options.UserName, options.Password);
@@ -287,7 +287,7 @@ namespace Backup1cToCloud
             }
             catch (Exception ex)
             {
-                throw new Exception($"Ошибка {ex.Message} при отправке письма с сервера {options.SmtpServer}, порт {options.Port}");
+                throw new Exception($"РћС€РёР±РєР° {ex.Message} РїСЂРё РѕС‚РїСЂР°РІРєРµ РїРёСЃСЊРјР° СЃ СЃРµСЂРІРµСЂР° {options.SmtpServer}, РїРѕСЂС‚ {options.Port}");
             }
         }
     }
