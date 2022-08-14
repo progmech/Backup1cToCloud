@@ -11,26 +11,33 @@ namespace Backup1cToCloud
     public class BackupWorker : BackgroundService
     {
         private const int HoursInADay = 24;
-        private readonly ILogger<BackupWorker> _logger;
-        private readonly IOptions<BackupOptions> _config;
-        private readonly AmazonS3Client _s3client;
+        private readonly ILogger<BackupWorker>? _logger;
+        private readonly IOptions<BackupOptions>? _config;
+        private readonly AmazonS3Client? _s3client;
 
         public BackupWorker(ILogger<BackupWorker> logger, IOptions<BackupOptions> config)
         {
-            _logger = logger;
-            _config = config;
-            AmazonS3Config configsS3 = new AmazonS3Config
+            try 
             {
-                ServiceURL = _config.Value.ServiceURL
-            };
+                _logger = logger;
+                _config = config;
+                AmazonS3Config configsS3 = new AmazonS3Config
+                {
+                    ServiceURL = _config.Value.ServiceURL
+                };
 
-            _s3client = new AmazonS3Client(_config.Value.AccessKey, _config.Value.SecretKey, configsS3);
+                _s3client = new AmazonS3Client(_config.Value.AccessKey, _config.Value.SecretKey, configsS3);
+            }
+            catch (Exception ex)
+            {
+                SendMail($"Ошибка инициализации в конструкторе: {ex.Message}", config.Value.EmailOptions);
+            }
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            while (!stoppingToken.IsCancellationRequested)
-            {
+            //while (!stoppingToken.IsCancellationRequested)
+            //{
                 var startDate = DateTime.Now;
                 _logger.LogInformation("Резервное копирование начато {Time}.", startDate);
                 foreach (DatabaseOption databaseOption in _config.Value.Databases) 
@@ -47,11 +54,11 @@ namespace Backup1cToCloud
                     }
                 }
                 var endDate = DateTime.Now;
-                var delayHours = TimeSpan.FromHours(HoursInADay - (endDate - startDate).TotalHours);
+                // var delayHours = TimeSpan.FromHours(HoursInADay - (endDate - startDate).TotalHours);
                 _logger.LogInformation("Резервное копирование закончено {Time}.", endDate);
-                _logger.LogInformation("Следующий запуск {Time}.", endDate + delayHours);
-                await Task.Delay(delayHours, stoppingToken);
-            }
+            //    _logger.LogInformation("Следующий запуск {Time}.", endDate + delayHours);
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            //}
         }
 
         private void Backup(DatabaseOption databaseOption)
