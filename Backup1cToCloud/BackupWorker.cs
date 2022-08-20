@@ -11,9 +11,9 @@ namespace Backup1cToCloud
     public class BackupWorker : BackgroundService
     {
         private const int HoursInADay = 24;
-        private readonly ILogger<BackupWorker>? _logger;
-        private readonly IOptions<BackupOptions>? _config;
-        private readonly AmazonS3Client? _s3client;
+        private readonly ILogger<BackupWorker> _logger;
+        private readonly IOptions<BackupOptions> _config;
+        private readonly AmazonS3Client _s3Client;
 
         public BackupWorker(ILogger<BackupWorker> logger, IOptions<BackupOptions> config)
         {
@@ -21,12 +21,12 @@ namespace Backup1cToCloud
             {
                 _logger = logger;
                 _config = config;
-                AmazonS3Config configsS3 = new AmazonS3Config
+                var configsS3 = new AmazonS3Config
                 {
-                    ServiceURL = _config.Value.ServiceURL
+                    ServiceURL = _config.Value.ServiceUrl
                 };
 
-                _s3client = new AmazonS3Client(_config.Value.AccessKey, _config.Value.SecretKey, configsS3);
+                _s3Client = new AmazonS3Client(_config.Value.AccessKey, _config.Value.SecretKey, configsS3);
             }
             catch (Exception ex)
             {
@@ -36,12 +36,25 @@ namespace Backup1cToCloud
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            //while (!stoppingToken.IsCancellationRequested)
-            //{
+            var passed = false;
+            _logger.LogInformation("Служба резервного копирования запущена {Time}.", DateTime.Now);
+            while (!stoppingToken.IsCancellationRequested)
+            {
                 var startDate = DateTime.Now;
+                if (startDate.Hour != 3)
+                {
+                    passed = false;
+                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                    continue;
+                }
+                if (startDate.Hour == 3 && passed) continue;
                 _logger.LogInformation("Резервное копирование начато {Time}.", startDate);
                 foreach (DatabaseOption databaseOption in _config.Value.Databases) 
                 {
+                    if (!databaseOption.IsActive)
+                    {
+                        continue;
+                    }
                     try 
                     {
                         Backup(databaseOption);
@@ -53,12 +66,13 @@ namespace Backup1cToCloud
                         SendMail(ex.Message, _config.Value.EmailOptions);
                     }
                 }
-                var endDate = DateTime.Now;
-                // var delayHours = TimeSpan.FromHours(HoursInADay - (endDate - startDate).TotalHours);
+                DateTime endDate = DateTime.Now;
+                TimeSpan delayHours = TimeSpan.FromHours(HoursInADay - (endDate - startDate).TotalHours);
                 _logger.LogInformation("Резервное копирование закончено {Time}.", endDate);
-            //    _logger.LogInformation("Следующий запуск {Time}.", endDate + delayHours);
-                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-            //}
+                _logger.LogInformation("Следующий запуск {Time}.", endDate + delayHours);
+                passed = true;
+                await Task.Delay(delayHours, stoppingToken);
+            }
         }
 
         private void Backup(DatabaseOption databaseOption)
@@ -78,14 +92,15 @@ namespace Backup1cToCloud
                 || string.IsNullOrEmpty(options.From)
                 || string.IsNullOrEmpty(options.To)
                 || string.IsNullOrEmpty(options.UserName)
-                || string.IsNullOrEmpty(options.Password)) {
-                    throw new Exception("Неправильные настройки электронной почты!");
-                }
+                || string.IsNullOrEmpty(options.Password)) 
+            {
+                throw new Exception("Неправильные настройки электронной почты!");
+            }
         }
 
         private void CompareChecksum(string bucketName, string archiveName)
         {
-            string sourceCheckSum, targetCheckSum;
+            string sourceCheckSum;
             using (FileStream fop = File.OpenRead(archiveName))
             {
                 sourceCheckSum = BitConverter.ToString(System.Security.Cryptography.MD5.Create().ComputeHash(fop)).Replace("-", string.Empty);
@@ -93,9 +108,9 @@ namespace Backup1cToCloud
             Task<ListObjectsResponse> files = ListObjectsAsync(bucketName);
             foreach (var obj in files.Result.S3Objects) 
             {
-                if(obj.Key == Path.GetFileName(archiveName)) 
+                if(obj.Key == Path.GetFileName(archiveName))
                 {
-                    targetCheckSum = obj.ETag.ToUpper().Replace("\"", string.Empty);
+                    string targetCheckSum = obj.ETag.ToUpper().Replace("\"", string.Empty);
                     if(sourceCheckSum != targetCheckSum) 
                     {
                         throw new Exception($"Контрольные суммы файла {archiveName} и файла {obj.Key} в облаке {bucketName} не совпадают!");
@@ -155,13 +170,13 @@ namespace Backup1cToCloud
             {
                 BucketName = bucketName
             };
-            var response = await _s3client.ListObjectsAsync(request);
+            var response = await _s3Client.ListObjectsAsync(request);
             return response;
         }
 
         private async Task<DeleteObjectResponse> DeleteObjectAsync(string bucketName, string key)
         {
-            var response = await _s3client.DeleteObjectAsync(bucketName, key);
+            var response = await _s3Client.DeleteObjectAsync(bucketName, key);
             return response;
         }
 
@@ -175,7 +190,7 @@ namespace Backup1cToCloud
 
         private async Task<ListBucketsResponse> ListBucketsAsync()
         {
-            var response = await _s3client.ListBucketsAsync();
+            var response = await _s3Client.ListBucketsAsync();
             return response;
         }
 
@@ -208,7 +223,7 @@ namespace Backup1cToCloud
                 ChecksumAlgorithm = ChecksumAlgorithm.SHA1,
                 ChecksumSHA1 = chksum + 5
             };
-            var response = await _s3client.PutObjectAsync(request);
+            var response = await _s3Client.PutObjectAsync(request);
             return response;
         }
 

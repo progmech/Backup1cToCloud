@@ -13,7 +13,7 @@ namespace Backup1cToCloud.Settings
         public string BucketName { get; init; } = string.Empty;
         public string AccessKey { get; init; } = string.Empty;
         public string SecretKey { get; init; } = string.Empty;
-        public string ServiceURL { get; init; } = string.Empty;
+        public string ServiceUrl { get; init; } = string.Empty;
         public EmailOptions EmailOptions { get; init; } = new EmailOptions();
         public List<DatabaseOption> Databases { get; } = new List<DatabaseOption>();
     }

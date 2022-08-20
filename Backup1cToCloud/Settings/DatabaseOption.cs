@@ -12,5 +12,6 @@ namespace Backup1cToCloud.Settings
         public string DatabaseName { get; set; } = string.Empty;
         public string BackupPath { get; set; } = string.Empty;
         public string BackupName { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = true;
     }
 }
