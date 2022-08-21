@@ -10,7 +10,9 @@ namespace Backup1cToCloud
 {
     public class BackupWorker : BackgroundService
     {
-        private const int HoursInADay = 24;
+        private const int HoursInDay = 24;
+        private const int MinutesInHour = 60;
+        private const int StartAt = 3;
         private readonly ILogger<BackupWorker> _logger;
         private readonly IOptions<BackupOptions> _config;
         private readonly AmazonS3Client _s3Client;
@@ -37,17 +39,18 @@ namespace Backup1cToCloud
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             var passed = false;
-            _logger.LogInformation("Служба резервного копирования запущена {Time}.", DateTime.Now);
+            _logger.LogInformation("Служба резервного копирования запущена в {Time}.", DateTime.Now);
             while (!stoppingToken.IsCancellationRequested)
             {
                 var startDate = DateTime.Now;
-                if (startDate.Hour != 3)
+                if (startDate.Hour != StartAt)
                 {
                     passed = false;
-                    await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+                    _logger.LogInformation("Проверка времени запуска выполнена в {Time}.", startDate);
+                    await Task.Delay(TimeSpan.FromMinutes(MinutesInHour - startDate.Minute), stoppingToken);
                     continue;
                 }
-                if (startDate.Hour == 3 && passed) continue;
+                if (startDate.Hour == StartAt && passed) continue;
                 _logger.LogInformation("Резервное копирование начато {Time}.", startDate);
                 foreach (DatabaseOption databaseOption in _config.Value.Databases) 
                 {
@@ -67,7 +70,7 @@ namespace Backup1cToCloud
                     }
                 }
                 DateTime endDate = DateTime.Now;
-                TimeSpan delayHours = TimeSpan.FromHours(HoursInADay - (endDate - startDate).TotalHours);
+                TimeSpan delayHours = TimeSpan.FromHours(HoursInDay - (endDate - startDate).TotalHours);
                 _logger.LogInformation("Резервное копирование закончено {Time}.", endDate);
                 _logger.LogInformation("Следующий запуск {Time}.", endDate + delayHours);
                 passed = true;
